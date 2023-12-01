@@ -66,9 +66,8 @@ mod day1 {
 
     pub(super) fn part1(input: &str) -> String {
         input.lines().map(|line| {
-            let mut digits = line.chars().filter_map(|c| c.to_digit(10));
-            let first = digits.next().expect("a digit in puzzle input");
-            let last = digits.last().unwrap_or(first);
+            let first = line.chars().filter_map(|c| c.to_digit(10)).next().expect("Puzzle input must contain a digit");
+            let last = line.chars().rev().filter_map(|c| c.to_digit(10)).next().unwrap_or(first);
             first * 10 + last
         }).sum::<u32>().to_string()
     }
