@@ -12,23 +12,13 @@ const NUMBERS: [(&str, usize); 9] = [
     ("nine", 9),
 ];
 
-fn first_digit(str: &str) -> usize {
-    let digit = str.chars().enumerate().filter_map(|(index, char)| char.to_digit(10).map(|d| (index, d as usize))).next();
-    let named = NUMBERS.iter().filter_map(|(name, val)| str.find(name).map(|i| (i, *val))).min_by(|(i1, _), (i2, _)| i1.cmp(i2));
-    match (digit, named) {
+fn digit(str: &str, position: Position) -> usize {
+    let digit = position.choose_char_digit(str.chars().enumerate().filter_map(|(index, char)| char.to_digit(10).map(|d| (index, d as usize))));
+    let spelled = position.choose_spelled_digit(NUMBERS.iter().filter_map(|(name, val)| position.find_spelled_digit(str, name, *val)));
+    match (digit, spelled) {
         (None, None) => unreachable!("Puzzle input must contain proper data"),
         (Some((_, val)), None) | (None, Some((_, val))) => val,
-        (Some((i1, v1)), Some((i2, v2))) => if i1 < i2 { v1 } else { v2 }
-    }
-}
-
-fn last_digit(str: &str) -> usize {
-    let digit = str.chars().enumerate().filter_map(|(index, char)| char.to_digit(10).map(|d| (index, d as usize))).last();
-    let named = NUMBERS.iter().filter_map(|(name, val)| str.rfind(name).map(|i| (i, *val))).max_by(|(i1, _), (i2, _)| i1.cmp(i2));
-    match (digit, named) {
-        (None, None) => unreachable!("Puzzle input must contain proper data"),
-        (Some((_, val)), None) | (None, Some((_, val))) => val,
-        (Some((i1, v1)), Some((i2, v2))) => if i1 > i2 { v1 } else { v2 }
+        (Some((i1, v1)), Some((i2, v2))) => if position.compare(i1, i2) { v1 } else { v2 }
     }
 }
 
@@ -41,7 +31,42 @@ pub(super) fn part1(input: &str) -> String {
 }
 
 pub(super) fn part2(input: &str) -> String {
-    input.lines().map(|line| first_digit(line) * 10 + last_digit(line)).sum::<usize>().to_string()
+    input.lines().map(|line| digit(line, Position::First) * 10 + digit(line, Position::Last)).sum::<usize>().to_string()
+}
+
+enum Position {
+    First,
+    Last,
+}
+
+impl Position {
+    fn choose_char_digit(&self, mut chars: impl Iterator<Item=(usize, usize)>) -> Option<(usize, usize)> {
+        match self {
+            Position::First => chars.next(),
+            Position::Last => chars.last()
+        }
+    }
+
+    fn find_spelled_digit(&self, str: &str, name: &str, val: usize) -> Option<(usize, usize)> {
+        match self {
+            Position::First => str.find(name).map(|i| (i, val)),
+            Position::Last => str.rfind(name).map(|i| (i, val)),
+        }
+    }
+
+    fn choose_spelled_digit(&self, chars: impl Iterator<Item=(usize, usize)>) -> Option<(usize, usize)> {
+        match self {
+            Position::First => chars.min_by(|(i1, _), (i2, _)| i1.cmp(i2)),
+            Position::Last => chars.max_by(|(i1, _), (i2, _)| i1.cmp(i2))
+        }
+    }
+
+    fn compare(&self, i1: usize, i2: usize) -> bool {
+        match self {
+            Position::First => i1 < i2,
+            Position::Last => i1 > i2
+        }
+    }
 }
 
 #[cfg(test)]
