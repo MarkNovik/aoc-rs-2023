@@ -1,27 +1,16 @@
+use std::cmp::max;
+
 pub(super) const DAY: u8 = 2;
 
-macro_rules! max {
-    ($a:expr, $b:expr) => {
-        if $a > $b {
-            $a
-        } else {
-            $b
-        }
-    };
-}
-
 pub(super) fn part1(input: &str) -> String {
-    let red_cap = 12;
-    let green_cap = 13;
-    let blue_cap = 14;
     input
         .lines()
         .map(Game::from)
         .filter(|game| {
             game.cubes.iter().all(|&cube| match cube {
-                Cube::Red { amount } => amount <= red_cap,
-                Cube::Green { amount } => amount <= green_cap,
-                Cube::Blue { amount } => amount <= blue_cap,
+                Cube::Red { amount } => amount <= 12,
+                Cube::Green { amount } => amount <= 13,
+                Cube::Blue { amount } => amount <= 14,
             })
         })
         .map(|g| g.id)
@@ -38,9 +27,9 @@ pub(super) fn part2(input: &str) -> String {
                 game.cubes
                     .into_iter()
                     .fold((0, 0, 0), |(r, g, b), c| match c {
-                        Cube::Red { amount } => (max!(r, amount), g, b),
-                        Cube::Green { amount } => (r, max!(g, amount), b),
-                        Cube::Blue { amount } => (r, g, max!(b, amount)),
+                        Cube::Red { amount } => (max(r, amount), g, b),
+                        Cube::Green { amount } => (r, max(g, amount), b),
+                        Cube::Blue { amount } => (r, g, max(b, amount)),
                     });
             red * green * blue
         })
@@ -83,7 +72,7 @@ struct Game {
 
 impl From<&str> for Game {
     fn from(value: &str) -> Self {
-        let mut split = value.split(":");
+        let mut split = value.split(':');
         let id = split
             .next()
             .expect("Input must have colon")
@@ -95,7 +84,7 @@ impl From<&str> for Game {
         let cubes = split
             .next()
             .expect("Input must have semicolon")
-            .split(|c| c == ',' || c == ';')
+            .split([',', ';'])
             .map(Cube::from);
         Game { id, cubes: cubes.collect() }
     }
