@@ -1,5 +1,3 @@
-use std::fmt::{self, Display};
-
 pub(super) const DAY: u8 = 2;
 
 macro_rules! max {
@@ -18,7 +16,7 @@ pub(super) fn part1(input: &str) -> String {
     let blue_cap = 14;
     input
         .lines()
-        .filter_map(|line| Game::try_from(line).ok())
+        .map(Game::from)
         .filter(|game| {
             game.cubes.iter().all(|&cube| match cube {
                 Cube::Red { amount } => amount <= red_cap,
@@ -34,7 +32,7 @@ pub(super) fn part1(input: &str) -> String {
 pub(super) fn part2(input: &str) -> String {
     input
         .lines()
-        .filter_map(|line| Game::try_from(line).ok())
+        .map(Game::from)
         .map(|game| {
             let (red, green, blue) =
                 game.cubes
@@ -50,22 +48,6 @@ pub(super) fn part2(input: &str) -> String {
         .to_string()
 }
 
-#[derive(Debug)]
-enum ParseError {
-    InvalidString(String),
-    UnexpectedColor(String),
-}
-
-impl Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::InvalidString(msg) => write!(f, "Invalid input string: {msg}"),
-            ParseError::UnexpectedColor(color) => write!(f, "Unexpected color `{color}`"),
-        }
-    }
-}
-impl std::error::Error for ParseError {}
-
 #[derive(Debug, Clone, Copy)]
 enum Cube {
     Red { amount: usize },
@@ -73,24 +55,22 @@ enum Cube {
     Blue { amount: usize },
 }
 
-impl TryFrom<&str> for Cube {
-    type Error = ParseError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+impl From<&str> for Cube {
+    fn from(value: &str) -> Self {
         let mut split = value.trim().split(' ');
         let amount = split
             .next()
-            .ok_or(ParseError::InvalidString(value.to_owned()))?
+            .expect("provided string must match `{amount} {color}` pattern")
             .parse::<usize>()
-            .map_err(|_| ParseError::InvalidString(value.to_owned()))?;
+            .expect("`amount` must be a valid natural number");
         match split
             .next()
-            .ok_or(ParseError::InvalidString(value.to_owned()))?
+            .expect("provided string must match `{amount} {color}` pattern")
         {
-            "red" => Ok(Cube::Red { amount }),
-            "green" => Ok(Cube::Green { amount }),
-            "blue" => Ok(Cube::Blue { amount }),
-            str => Err(ParseError::UnexpectedColor(str.to_owned())),
+            "red" => Cube::Red { amount },
+            "green" => Cube::Green { amount },
+            "blue" => Cube::Blue { amount },
+            str => panic!("{str} in invalid color"),
         }
     }
 }
@@ -101,14 +81,12 @@ struct Game {
     cubes: Vec<Cube>,
 }
 
-impl TryFrom<&str> for Game {
-    type Error = ParseError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+impl From<&str> for Game {
+    fn from(value: &str) -> Self {
         let mut split = value.split(":");
         let id = split
             .next()
-            .ok_or(ParseError::InvalidString(value.to_owned()))?
+            .expect("Input must have colon")
             .chars()
             .filter(char::is_ascii_digit)
             .collect::<String>()
@@ -116,11 +94,10 @@ impl TryFrom<&str> for Game {
             .expect("Digits are filtered. This cannot fail");
         let cubes = split
             .next()
-            .ok_or(ParseError::InvalidString(value.to_owned()))?
+            .expect("Input must have semicolon")
             .split(|c| c == ',' || c == ';')
-            .map(Cube::try_from)
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Game { id, cubes })
+            .map(Cube::from);
+        Game { id, cubes: cubes.collect() }
     }
 }
 
