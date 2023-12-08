@@ -1,5 +1,6 @@
 mod day1;
 mod day2;
+mod day5;
 
 macro_rules! time {
     ($b:block) => {{
@@ -27,6 +28,5 @@ macro_rules! run {
 }
 
 fn main() {
-    run!(day1);
-    run!(day2);
+    run!(day5);
 }
